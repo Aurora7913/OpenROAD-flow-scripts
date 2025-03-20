@@ -409,6 +409,14 @@ $(WRAPPED_LIBS):
 .PHONY: synth
 synth: $(RESULTS_DIR)/1_synth.v
 
+.PHONY: synth-repair
+synth-repair: synth
+	$(UNSET_AND_MAKE) do-synth-repair
+
+.PHONY: do-synth-repair
+do-synth-repair:
+	($(TIME_CMD) $(OPENROAD_CMD) $(SCRIPTS_DIR)/synth_repair.tcl) 2>&1 | tee $(abspath $(LOG_DIR)/1_synth_repair.log)
+
 .PHONY: synth-report
 synth-report: synth
 	$(UNSET_AND_MAKE) do-synth-report
@@ -416,6 +424,15 @@ synth-report: synth
 .PHONY: do-synth-report
 do-synth-report:
 	($(TIME_CMD) $(OPENROAD_CMD) $(SCRIPTS_DIR)/synth_metrics.tcl) 2>&1 | tee $(abspath $(LOG_DIR)/1_1_yosys_metrics.log)
+
+.PHONY: synth-repair-report
+synth-repair-report: synth-repair
+	$(UNSET_AND_MAKE) do-synth-repair-report
+
+.PHONY: do-synth-repair-report
+do-synth-repair-report:
+	($(TIME_CMD) $(OPENROAD_CMD) $(SCRIPTS_DIR)/synth_repair_metrics.tcl) 2>&1 | tee $(abspath $(LOG_DIR)/1_2_synth_repair_metrics.log)
+
 
 .PHONY: memory
 memory:
