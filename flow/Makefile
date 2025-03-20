@@ -355,6 +355,7 @@ clean_synth:
 	rm -f $(RESULTS_DIR)/1_* $(RESULTS_DIR)/mem*.json
 	rm -rf $(RESULTS_DIR)/memories
 	rm -f $(REPORTS_DIR)/synth_*
+	rm -f $(REPORTS_DIR)/1_*
 	rm -f $(LOG_DIR)/1_*
 	rm -f $(SYNTH_STATS)
 
