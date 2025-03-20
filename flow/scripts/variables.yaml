@@ -240,6 +240,7 @@ SYNTH_MINIMUM_KEEP_SIZE:
     platform's standard cell library. The default value is platform specific.
   stages:
     - synth
+  default: 0
 SYNTH_WRAPPED_OPERATORS:
   description: >
     Synthesize multiple architectural options for each arithmetic operator in the
@@ -644,9 +645,11 @@ DFF_LIB_FILES:
 DONT_USE_LIBS:
   description: |
     Set liberty files as `dont_use`.
-PRESERVE_CELLS:
+SYNTH_KEEP_MODULES:
   description: |
     Mark modules to keep from getting removed in flattening.
+  stages:
+    - synth
 SYNTH_ARGS:
   description: |
     Optional synthesis variables for yosys.
@@ -656,6 +659,7 @@ VERILOG_TOP_PARAMS:
     Apply toplevel params (if exist).
   stages:
     - synth
+  default: ""
 CORE_ASPECT_RATIO:
   description: >
     The core aspect ratio (height / width). This value is ignored if
@@ -912,3 +916,7 @@ YOSYS_FLAGS:
     Additional flags to pass to yosys.
   stages:
     - synth
+FLOW_VARIANT:
+  description: >
+    Flow variant to use, used in the flow variant directory name.
+  default: base

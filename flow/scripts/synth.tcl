@@ -1,3 +1,5 @@
+set ::env(VERILOG_FILES) $::env(RESULTS_DIR)/1_synth.rtlil
+
 source $::env(SCRIPTS_DIR)/synth_preamble.tcl
 
 hierarchy -check -top $::env(DESIGN_NAME)
@@ -6,6 +8,14 @@ if { [env_var_equals SYNTH_GUT 1] } {
   # /deletes all cells at the top level, which will quickly optimize away
   # everything else, including macros.
   delete $::env(DESIGN_NAME)/c:*
+}
+
+if {[env_var_exists_and_non_empty SYNTH_KEEP_MODULES]} {
+  foreach module $::env(SYNTH_KEEP_MODULES) {
+    select -module $module
+    setattr -mod -set keep_hierarchy 1
+    select -clear
+  }
 }
 
 if {![env_var_equals SYNTH_HIERARCHICAL 1]} {
@@ -43,6 +53,7 @@ if {![env_var_exists_and_non_empty SYNTH_WRAPPED_OPERATORS]} {
 
 # Get rid of indigestibles
 chformal -remove
+delete t:\$print
 
 # rename registers to have the verilog register name in its name
 # of the form \regName$_DFF_P_. We should fix yosys to make it the reg name.
