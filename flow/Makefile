@@ -238,6 +238,14 @@ $(WRAPPED_LIBS):
 .PHONY: synth
 synth: $(RESULTS_DIR)/1_synth.odb
 
+.PHONY: synth-repair
+synth-repair: synth
+	$(UNSET_AND_MAKE) do-synth-repair
+
+.PHONY: do-synth-repair
+do-synth-repair:
+	$(RUN_CMD) --log $(abspath $(LOG_DIR)/1_synth_repair.log) --tee -- $(OPENROAD_CMD) $(SCRIPTS_DIR)/synth_repair.tcl
+
 .PHONY: synth-report
 synth-report: synth
 	$(UNSET_AND_MAKE) do-synth-report
@@ -245,6 +253,14 @@ synth-report: synth
 .PHONY: do-synth-report
 do-synth-report:
 	$(RUN_CMD) --log $(abspath $(LOG_DIR)/1_2_yosys_metrics.log) --tee -- $(OPENROAD_CMD) $(SCRIPTS_DIR)/synth_metrics.tcl
+
+.PHONY: synth-repair-report
+synth-repair-report: synth-repair
+	$(UNSET_AND_MAKE) do-synth-repair-report
+
+.PHONY: do-synth-repair-report
+do-synth-repair-report:
+	$(RUN_CMD) --log $(abspath $(LOG_DIR)/1_2_synth_repair_metrics.log) --tee -- $(OPENROAD_CMD) $(SCRIPTS_DIR)/synth_repair_metrics.tcl
 
 # ==============================================================================
 
