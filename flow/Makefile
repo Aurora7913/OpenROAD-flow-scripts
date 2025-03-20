@@ -488,6 +488,7 @@ $(RESULTS_DIR)/1_synth.v: $(RESULTS_DIR)/1_1_yosys.v
 clean_synth:
 	rm -f $(RESULTS_DIR)/1_* $(RESULTS_DIR)/mem*.json
 	rm -f $(REPORTS_DIR)/synth_*
+	rm -f $(REPORTS_DIR)/1_*
 	rm -f $(LOG_DIR)/1_*
 	rm -f $(SYNTH_STATS)
 	rm -f $(SDC_FILE_CLOCK_PERIOD)
