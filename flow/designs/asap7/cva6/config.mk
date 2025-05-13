@@ -1,7 +1,3 @@
-#
-# TODO before enablement: pipe VERILOG_DEFINES through to yosys
-#
-
 export PLATFORM               = asap7
 
 export DESIGN_NAME            = cva6
@@ -126,8 +122,8 @@ export VERILOG_FILES          = $(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/core/cvfpu
 	$(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/core/pmp/src/pmp.sv \
 	$(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/core/pmp/src/pmp_entry.sv \
 	$(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/core/pmp/src/pmp_data_if.sv \
+	$(PLATFORM_DIR)/verilog/fakeram7_256x32.sv \
 	$(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/common/local/util/tc_sram_wrapper.sv \
-	$(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/common/local/util/tc_sram_wrapper_cache_techno.sv \
 	$(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/vendor/pulp-platform/tech_cells_generic/src/rtl/tc_sram.sv \
 	$(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/common/local/util/sram.sv \
 	$(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/common/local/util/sram_cache.sv \
@@ -179,18 +175,22 @@ export VERILOG_INCLUDE_DIRS = $(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/core/include
 	$(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/core/cvfpu/src/common_cells/include \
 	$(DESIGN_HOME)/src/$(DESIGN_NICKNAME)/core/cache_subsystem/hpdcache/rtl/include
 
-VERILOG_DEFINES += -D HPDCACHE_ASSERT_OFF
+export VERILOG_DEFINES += -D HPDCACHE_ASSERT_OFF
+
+export ADDITIONAL_LEFS = $(PLATFORM_DIR)/lef/fakeram7_256x32.lef
+
+export ADDITIONAL_LIBS = $(PLATFORM_DIR)/lib/NLDM/fakeram7_256x32.lib
 
 export SDC_FILE               = $(DESIGN_HOME)/$(PLATFORM)/$(DESIGN_NAME)/constraint.sdc
 
-export DIE_AREA               = 0 0 200 200
-export CORE_AREA              = 1.08 1.08 190 190
+export DIE_AREA               = 0 0 250 250
+export CORE_AREA              = 1.08 1.08 240 240
 
-export PLACE_DENSITY          = 0.40
+export PLACE_DENSITY          = 0.50
 
 # a smoketest for this option, there are a
 # few last gasp iterations
 export SKIP_LAST_GASP ?= 1
 
 
-export SYNTH_USE_SLANG = 1
+export SYNTH_HDL_FRONTEND = slang
