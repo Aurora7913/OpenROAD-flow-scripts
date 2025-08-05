@@ -104,8 +104,6 @@ ERROR_METRIC = 9e99
 ORFS_FLOW_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "../../../../flow")
 )
-# URL to ORFS GitHub repository
-ORFS_URL = "https://github.com/The-OpenROAD-Project/OpenROAD-flow-scripts"
 # Global variable for args
 args = None
 
@@ -120,11 +118,9 @@ class AutoTunerBase(tune.Trainable):
         Setup current experiment step.
         """
         # We create the following directory structure:
-        #      1/     2/         3/       4/                5/   6/
-        # <repo>/<logs>/<platform>/<design>/<experiment>/<id>/<cwd>
-        # Run by Ray in directory specified by `local_dir`
-        repo_dir = os.getcwd() + "/../" * 6
-        self.repo_dir = os.path.abspath(repo_dir)
+        #      1/     2/         3/       4/           5/
+        # <repo>/<logs>/<platform>/<design>/<experiment/<cwd>
+        self.repo_dir = os.path.abspath(LOCAL_DIR + "/../" * 4)
         self.parameters = parse_config(
             config=config,
             base_dir=self.repo_dir,
@@ -158,8 +154,8 @@ class AutoTunerBase(tune.Trainable):
             install_path=INSTALL_PATH,
         )
         self.step_ += 1
-        (score, effective_clk_period, num_drc) = self.evaluate(
-            read_metrics(metrics_file)
+        (score, effective_clk_period, num_drc, die_area) = self.evaluate(
+            read_metrics(metrics_file, args.stop_stage)
         )
         # Feed the score back to Tune.
         # return must match 'metric' used in tune.run()
@@ -167,6 +163,7 @@ class AutoTunerBase(tune.Trainable):
             METRIC: score,
             "effective_clk_period": effective_clk_period,
             "num_drc": num_drc,
+            "die_area": die_area,
         }
 
     def evaluate(self, metrics):
@@ -178,13 +175,13 @@ class AutoTunerBase(tune.Trainable):
         error = "ERR" in metrics.values()
         not_found = "N/A" in metrics.values()
         if error or not_found:
-            return (ERROR_METRIC, "-", "-")
+            return (ERROR_METRIC, "-", "-", "-")
         effective_clk_period = metrics["clk_period"] - metrics["worst_slack"]
         num_drc = metrics["num_drc"]
         gamma = effective_clk_period / 10
         score = effective_clk_period
         score = score * (100 / self.step_) + gamma * num_drc
-        return (score, effective_clk_period, num_drc)
+        return (score, effective_clk_period, num_drc, metrics["die_area"])
 
     def _is_valid_config(self, config):
         """
@@ -251,13 +248,13 @@ class PPAImprov(AutoTunerBase):
         error = "ERR" in metrics.values() or "ERR" in reference.values()
         not_found = "N/A" in metrics.values() or "N/A" in reference.values()
         if error or not_found:
-            return (ERROR_METRIC, "-", "-")
+            return (ERROR_METRIC, "-", "-", "-")
         ppa = self.get_ppa(metrics)
         gamma = ppa / 10
         score = ppa * (self.step_ / 100) ** (-1) + (gamma * metrics["num_drc"])
         effective_clk_period = metrics["clk_period"] - metrics["worst_slack"]
         num_drc = metrics["num_drc"]
-        return (score, effective_clk_period, num_drc)
+        return (score, effective_clk_period, num_drc, metrics["die_area"])
 
 
 def parse_arguments():
@@ -311,65 +308,19 @@ def parse_arguments():
         default=None,
         help="Time limit (in hours) for each trial run. Default is no limit.",
     )
+    parser.add_argument(
+        "--stop_stage",
+        type=str,
+        metavar="<str>",
+        choices=["floorplan", "place", "cts", "globalroute", "route", "finish"],
+        default="finish",
+        help="Name of the stage to stop after. Default is finish.",
+    )
     tune_parser.add_argument(
         "--resume",
         action="store_true",
         help="Resume previous run. Note that you must also set a unique experiment\
                 name identifier via `--experiment NAME` to be able to resume.",
-    )
-
-    # Setup
-    parser.add_argument(
-        "--git_clean",
-        action="store_true",
-        help="Clean binaries and build files."
-        " WARNING: may lose previous data."
-        " Use carefully.",
-    )
-    parser.add_argument(
-        "--git_clone",
-        action="store_true",
-        help="Force new git clone."
-        " WARNING: may lose previous data."
-        " Use carefully.",
-    )
-    parser.add_argument(
-        "--git_clone_args",
-        type=str,
-        metavar="<str>",
-        default="",
-        help="Additional git clone arguments.",
-    )
-    parser.add_argument(
-        "--git_latest", action="store_true", help="Use latest version of OpenROAD app."
-    )
-    parser.add_argument(
-        "--git_or_branch",
-        type=str,
-        metavar="<str>",
-        default="",
-        help="OpenROAD app branch to use.",
-    )
-    parser.add_argument(
-        "--git_orfs_branch",
-        type=str,
-        metavar="<str>",
-        default="master",
-        help="OpenROAD-flow-scripts branch to use.",
-    )
-    parser.add_argument(
-        "--git_url",
-        type=str,
-        metavar="<url>",
-        default=ORFS_URL,
-        help="OpenROAD-flow-scripts repo URL to use.",
-    )
-    parser.add_argument(
-        "--build_args",
-        type=str,
-        metavar="<str>",
-        default="",
-        help="Additional arguments given to ./build_openroad.sh.",
     )
 
     # ML
@@ -623,9 +574,7 @@ def sweep():
         temp = dict()
         for value in parameter:
             temp.update(value)
-        queue.put(
-            [args, repo_dir, temp, LOCAL_DIR, SDC_ORIGINAL, FR_ORIGINAL, INSTALL_PATH]
-        )
+        queue.put([args, repo_dir, temp, SDC_ORIGINAL, FR_ORIGINAL, INSTALL_PATH])
     workers = [consumer.remote(queue) for _ in range(args.jobs)]
     print("[INFO TUN-0009] Waiting for results.")
     ray.get(workers)
@@ -658,7 +607,7 @@ def main():
         TrainClass = set_training_class(args.eval)
         # PPAImprov requires a reference file to compute training scores.
         if args.eval == "ppa-improv":
-            reference = read_metrics(args.reference)
+            reference = read_metrics(args.reference, args.stop_stage)
 
         tune_args = dict(
             name=args.experiment,
@@ -666,7 +615,7 @@ def main():
             mode="min",
             num_samples=args.samples,
             fail_fast=False,
-            local_dir=LOCAL_DIR,
+            storage_path=LOCAL_DIR,
             resume=args.resume,
             stop={"training_iteration": args.iterations},
             resources_per_trial={"cpu": os.cpu_count() / args.jobs},
@@ -691,7 +640,7 @@ def main():
         # if all runs have failed
         if analysis.best_result[METRIC] == ERROR_METRIC:
             print("[ERROR TUN-0016] No successful runs found.")
-            sys.exit(1)
+            sys.exit(16)
     elif args.mode == "sweep":
         sweep()
 

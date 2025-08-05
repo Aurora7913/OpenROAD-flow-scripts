@@ -14,18 +14,22 @@ export PLACE_DENSITY          = 0.30
 export CORE_AREA = $(shell \
   export MOCK_ARRAY_TABLE="$(MOCK_ARRAY_TABLE)"  && \
   export MOCK_ARRAY_SCALE="$(MOCK_ARRAY_SCALE)" && \
-  cd $(dir $(DESIGN_CONFIG)) && \
+  cd $(DESIGN_DIR) && \
   python3 -c "import config ; print(f'{config.margin_x} {config.margin_y} {config.core_width + config.margin_x} {config.core_height + config.margin_y}')")
 
 export DIE_AREA  = $(shell \
   export MOCK_ARRAY_TABLE="$(MOCK_ARRAY_TABLE)" && \
   export MOCK_ARRAY_SCALE="$(MOCK_ARRAY_SCALE)" && \
-  cd $(dir $(DESIGN_CONFIG)) && \
+  cd $(DESIGN_DIR) && \
   python3 -c "import config; print(f'{0} {0} {config.die_width} {config.die_height}')")
 
 export MACRO_PLACE_HALO = 0 2.16
 export RTLMP_BOUNDARY_WT = 0
 export RTLMP_FLOW ?= 1
+export RTLMP_MAX_INST = 250
+export RTLMP_MIN_INST = 50
+export RTLMP_MAX_MACRO = 64
+export RTLMP_MIN_MACRO = 8
 
 export BLOCKS                ?= Element
 
