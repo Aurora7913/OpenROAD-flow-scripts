@@ -1,13 +1,13 @@
 source $::env(SCRIPTS_DIR)/load.tcl
 source $::env(SCRIPTS_DIR)/util.tcl
-load_design 1_synth.v 1_synth.sdc
+load_design 1_synth.odb
 
 report_check_types -violators -verbose > $::env(REPORTS_DIR)/1_1_Pre_synthesis_repair_detailed.rpt
 
 if {[info exists ::env(SYNTH_REPAIR_TIMING_LOOP_CNT)]} {
     for {set i 0} {$i < $::env(SYNTH_REPAIR_TIMING_LOOP_CNT)} {incr i} {
         puts "Running repair_timing, iteration [expr {$i + 1}] of $::env(SYNTH_REPAIR_TIMING_LOOP_CNT) ..."
-        repair_timing_helper 0
+        repair_timing_helper
     }
 } else {
     puts "Warning: SYNTH_REPAIR_TIMING_LOOP_CNT environment variable not set, skipping repair_timing"
